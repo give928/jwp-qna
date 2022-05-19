@@ -56,7 +56,7 @@ class QnaServiceTest {
     }
 
     @Test
-    void delete_다른_사람이_쓴_글() throws Exception {
+    void delete_다른_사람이_쓴_글() {
         when(questionRepository.findByIdAndDeletedFalse(question.getId())).thenReturn(Optional.of(question));
 
         assertThatThrownBy(() -> qnaService.deleteQuestion(UserTest.SANJIGI, question.getId()))
@@ -76,7 +76,7 @@ class QnaServiceTest {
     }
 
     @Test
-    void delete_답변_중_다른_사람이_쓴_글() throws Exception {
+    void delete_답변_중_다른_사람이_쓴_글() {
         Answer answer2 = new Answer(2L, UserTest.SANJIGI, QuestionTest.Q1, "Answers Contents1");
         question.addAnswer(answer2);
 

@@ -1,10 +1,32 @@
 package qna.domain;
 
-public class Question {
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
+import javax.persistence.*;
+
+@Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@SuperBuilder
+public class Question extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(length = 100, nullable = false)
     private String title;
+
+    @Lob
     private String contents;
+
     private Long writerId;
+
+    @Builder.Default
+    @Column(nullable = false)
     private boolean deleted = false;
 
     public Question(String title, String contents) {
