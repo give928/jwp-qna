@@ -7,48 +7,54 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.context.jdbc.Sql;
 
+import javax.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
+@Sql("/truncate.sql")
 @DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class QuestionRepositoryTest {
     @Autowired
     private QuestionRepository questionRepository;
+
+    @Autowired
+    private EntityManager em;
 
     @Test
     @DisplayName("질문을 등록한다.")
     void save() {
         // given
-        Question question1 = newQuestion(1);
+        Question question = QuestionTest.newInstance();
 
         // when
-        questionRepository.save(question1);
+        questionRepository.save(question);
 
         // then
-        Question findQuestion1 = questionRepository.findById(question1.getId())
+        Question findQuestion1 = questionRepository.findById(question.getId())
                 .orElseThrow(IllegalStateException::new);
-        assertThat(findQuestion1).isEqualTo(question1);
+        assertThat(findQuestion1).isEqualTo(question);
     }
 
     @Test
     @DisplayName("100글자가 넘는 제목을 등록하면 예외가 발생한다.")
     void thrownByTooLongValue() {
         // given
-        Question question1 = Question.builder()
+        Question question = Question.builder()
                 .title("가나다라마바사아자차가나다라마바사아자차가나다라마바사아자차가나다라마바사아자차가나다라마바사아자차" +
                                "가나다라마바사아자차가나다라마바사아자차가나다라마바사아자차가나다라마바사아자차가나다라마바사아자차" +
                                "?")
-                .contents("contents")
+                .contents("question contents")
                 .build()
-                .writeBy(UserTest.JAVAJIGI);
+                .writeBy(UserTest.newInstance());
 
         // when
-        ThrowableAssert.ThrowingCallable throwingCallable = () -> questionRepository.save(question1);
+        ThrowableAssert.ThrowingCallable throwingCallable = () -> questionRepository.save(question);
 
         // then
         assertThatThrownBy(throwingCallable).isInstanceOf(DataIntegrityViolationException.class);
@@ -58,14 +64,14 @@ class QuestionRepositoryTest {
     @DisplayName("질문을 수정한다.")
     void update() {
         // given
-        Question question1 = saveQuestion(1);
-        String updateContents = "contents2";
+        Question question = questionRepository.save(QuestionTest.newInstance());
+        String updateContents = "question contents 2";
 
         // when
-        question1.setContents(updateContents);
+        question.setContents(updateContents);
 
         // then
-        Question findQuestion1 = questionRepository.findById(question1.getId())
+        Question findQuestion1 = questionRepository.findById(question.getId())
                 .orElseThrow(IllegalStateException::new);
         assertThat(findQuestion1.getContents()).isEqualTo(updateContents);
     }
@@ -74,13 +80,13 @@ class QuestionRepositoryTest {
     @DisplayName("질문을 삭제한다.")
     void delete() {
         // given
-        Question question1 = saveQuestion(1);
+        Question question = questionRepository.save(QuestionTest.newInstance());
 
         // when
-        questionRepository.delete(question1);
+        questionRepository.delete(question);
 
         // then
-        Optional<Question> deletedQuestion = questionRepository.findById(question1.getId());
+        Optional<Question> deletedQuestion = questionRepository.findById(question.getId());
         assertThat(deletedQuestion).isNotPresent();
     }
 
@@ -88,8 +94,8 @@ class QuestionRepositoryTest {
     @DisplayName("전체 질문을 조회한다.")
     void findAll() {
         // given
-        Question question1 = saveQuestion(1);
-        Question question2 = saveQuestion(2);
+        Question question1 = questionRepository.save(QuestionTest.newInstance());
+        Question question2 = questionRepository.save(QuestionTest.newInstance());
 
         // when
         List<Question> questions = questionRepository.findAll();
@@ -102,22 +108,22 @@ class QuestionRepositoryTest {
     @DisplayName("id로 질문을 조회한다.")
     void findById() {
         // given
-        Question question1 = saveQuestion(1);
+        Question question = questionRepository.save(QuestionTest.newInstance());
 
         // when
-        Question findQuestion1 = questionRepository.findById(question1.getId())
+        Question findQuestion1 = questionRepository.findById(question.getId())
                 .orElseThrow(IllegalStateException::new);
 
         // then
-        assertThat(findQuestion1).isEqualTo(question1);
+        assertThat(findQuestion1).isEqualTo(question);
     }
 
     @Test
     @DisplayName("삭제되지 않은 질문 컬렉션을 조회한다.")
     void findByDeletedFalse() {
         // given
-        Question q1 = saveQuestion(1);
-        Question q2 = saveQuestion(2);
+        Question q1 = questionRepository.save(QuestionTest.newInstance());
+        Question q2 = questionRepository.save(QuestionTest.newInstance());
 
         // when
         List<Question> questions = questionRepository.findByDeletedFalse();
@@ -130,7 +136,7 @@ class QuestionRepositoryTest {
     @DisplayName("id로 삭제되지 않은 질문을 조회한다.")
     void findByIdAndDeletedFalse() {
         // given
-        Question q1 = saveQuestion(1);
+        Question q1 = questionRepository.save(QuestionTest.newInstance());
 
         // when
         Question findQuestion = questionRepository.findByIdAndDeletedFalse(q1.getId())
@@ -140,15 +146,21 @@ class QuestionRepositoryTest {
         assertThat(findQuestion).isEqualTo(q1);
     }
 
-    private Question saveQuestion(int no) {
-        return questionRepository.save(newQuestion(no));
-    }
+    @Test
+    @DisplayName("연관 관계 매핑 후 객체 그래프 탐색 및 지연 로딩 테스트")
+    void lazyLoading() {
+        // given
+        Question question = questionRepository.save(QuestionTest.newInstance());
+        em.flush();
+        em.clear();
 
-    private Question newQuestion(int no) {
-        return Question.builder()
-                .title("title" + no)
-                .contents("contents" + no)
-                .build()
-                .writeBy(UserTest.JAVAJIGI);
+        // when
+        Question findQuestion = questionRepository.findById(question.getId())
+                .orElseThrow(IllegalStateException::new);
+
+        // then
+        assertAll(
+                () -> assertThat(findQuestion.getWriter().getId()).isNotNull()
+        );
     }
 }
