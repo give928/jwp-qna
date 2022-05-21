@@ -1,13 +1,15 @@
-package qna.domain;
+package qna.repository;
 
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.jdbc.Sql;
+import qna.domain.Question;
+import qna.domain.QuestionTest;
+import qna.domain.UserTest;
 
 import javax.persistence.EntityManager;
 import java.util.List;
@@ -31,6 +33,7 @@ class QuestionRepositoryTest {
     void save() {
         // given
         Question question = QuestionTest.newInstance();
+        System.out.println("question = " + question);
 
         // when
         questionRepository.save(question);
@@ -65,14 +68,16 @@ class QuestionRepositoryTest {
     void update() {
         // given
         Question question = questionRepository.save(QuestionTest.newInstance());
+        String updateTitle = "question title 1";
         String updateContents = "question contents 2";
 
         // when
-        question.setContents(updateContents);
+        question.update(updateTitle, updateContents);
 
         // then
         Question findQuestion1 = questionRepository.findById(question.getId())
                 .orElseThrow(IllegalStateException::new);
+        assertThat(findQuestion1.getTitle()).isEqualTo(updateTitle);
         assertThat(findQuestion1.getContents()).isEqualTo(updateContents);
     }
 

@@ -1,7 +1,6 @@
 package qna.domain;
 
-import lombok.*;
-import lombok.experimental.SuperBuilder;
+import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -13,11 +12,7 @@ import java.time.LocalDateTime;
 
 @EntityListeners(AuditingEntityListener.class)
 @MappedSuperclass
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@SuperBuilder
 @Getter
-@ToString
 public abstract class BaseEntity {
     @CreatedDate
     @Column(nullable = false, updatable = false)

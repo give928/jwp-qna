@@ -8,11 +8,8 @@ import java.util.Objects;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 @Getter
 public class DeleteHistory {
-    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -23,16 +20,36 @@ public class DeleteHistory {
     private Long contentId;
 
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "deleted_by_id", foreignKey = @ForeignKey(name = "fk_delete_history_to_user"))
     private User deletedBy;
 
-    @Builder.Default
-    private LocalDateTime createDate = LocalDateTime.now();
+    private LocalDateTime createDate;
 
+    @Builder
     public DeleteHistory(ContentType contentType, Long contentId, User deletedBy, LocalDateTime createDate) {
         this.contentType = contentType;
         this.contentId = contentId;
         this.deletedBy = deletedBy;
         this.createDate = createDate;
+        if (this.createDate == null) {
+            this.createDate = LocalDateTime.now();
+        }
+    }
+
+    public static DeleteHistory from(Answer answer) {
+        return DeleteHistory.builder()
+                .contentType(ContentType.ANSWER)
+                .contentId(answer.getId())
+                .deletedBy(answer.getWriter())
+                .build();
+    }
+
+    public static DeleteHistory from(Question question) {
+        return DeleteHistory.builder()
+                .contentType(ContentType.QUESTION)
+                .contentId(question.getId())
+                .deletedBy(question.getWriter())
+                .build();
     }
 
     @Override
@@ -40,15 +57,12 @@ public class DeleteHistory {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DeleteHistory that = (DeleteHistory) o;
-        return Objects.equals(id, that.id) &&
-                contentType == that.contentType &&
-                Objects.equals(contentId, that.contentId) &&
-                Objects.equals(deletedBy, that.deletedBy);
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, contentType, contentId, deletedBy);
+        return Objects.hash(id);
     }
 
     @Override

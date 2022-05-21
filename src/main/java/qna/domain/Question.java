@@ -1,18 +1,21 @@
 package qna.domain;
 
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import qna.exception.CannotDeleteException;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@SuperBuilder
+@Getter
 public class Question extends BaseEntity {
+    private static final String ERROR_MESSAGE_CANNOT_DELETE_QUESTION = "질문을 삭제할 권한이 없습니다.";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,18 +30,31 @@ public class Question extends BaseEntity {
     @JoinColumn(name = "writer_id", foreignKey = @ForeignKey(name = "fk_question_writer"))
     private User writer;
 
-    @Builder.Default
     @Column(nullable = false)
     private boolean deleted = false;
+
+    @Embedded
+    private Answers answers = new Answers();
 
     public Question(String title, String contents) {
         this(null, title, contents);
     }
 
     public Question(Long id, String title, String contents) {
+        this(id, title, contents, null, false, null);
+    }
+
+    @Builder
+    public Question(Long id, String title, String contents, User writer, boolean deleted, Answers answers) {
         this.id = id;
         this.title = title;
         this.contents = contents;
+        this.writer = writer;
+        this.deleted = deleted;
+        this.answers = answers;
+        if (this.answers == null) {
+            this.answers = new Answers();
+        }
     }
 
     public Question writeBy(User writer) {
@@ -52,34 +68,26 @@ public class Question extends BaseEntity {
 
     public void addAnswer(Answer answer) {
         answer.toQuestion(this);
+        answers.add(answer);
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getContents() {
-        return contents;
-    }
-
-    public void setContents(String contents) {
+    public void update(String title, String contents) {
+        this.title = title;
         this.contents = contents;
     }
 
-    public User getWriter() {
-        return writer;
-    }
+    public List<DeleteHistory> delete(User loginUser) {
+        if (!isOwner(loginUser)) {
+            throw new CannotDeleteException(ERROR_MESSAGE_CANNOT_DELETE_QUESTION);
+        }
 
-    public boolean isDeleted() {
-        return deleted;
-    }
+        this.deleted = true;
+        List<DeleteHistory> deleteHistories = new ArrayList<>();
+        deleteHistories.add(DeleteHistory.from(this));
 
-    public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
+        deleteHistories.addAll(answers.delete(loginUser));
+
+        return deleteHistories;
     }
 
     @Override
