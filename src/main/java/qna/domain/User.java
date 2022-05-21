@@ -1,16 +1,15 @@
 package qna.domain;
 
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
-import qna.UnAuthorizedException;
+import qna.exception.UnAuthorizedException;
 
 import javax.persistence.*;
 import java.util.Objects;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SuperBuilder
 public class User extends BaseEntity {
     public static final GuestUser GUEST_USER = new GuestUser();
 
@@ -34,6 +33,7 @@ public class User extends BaseEntity {
         this(null, userId, password, name, email);
     }
 
+    @Builder
     public User(Long id, String userId, String password, String name, String email) {
         this.id = id;
         this.userId = userId;
@@ -102,6 +102,23 @@ public class User extends BaseEntity {
 
     public String getEmail() {
         return email;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        User user = (User) o;
+        return getId() != null && Objects.equals(getId(), user.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
     }
 
     @Override

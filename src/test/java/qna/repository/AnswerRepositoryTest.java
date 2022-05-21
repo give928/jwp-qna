@@ -1,11 +1,11 @@
-package qna.domain;
+package qna.repository;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.jdbc.Sql;
+import qna.domain.*;
 
 import javax.persistence.EntityManager;
 import java.util.List;
@@ -46,7 +46,7 @@ class AnswerRepositoryTest {
         String updateContents = "answer contents 2";
 
         // when
-        answer.setContents(updateContents);
+        answer.update(updateContents);
 
         // then
         Answer findAnswer1 = answerRepository.findById(answer.getId())

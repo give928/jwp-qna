@@ -1,11 +1,14 @@
-package qna.domain;
+package qna.repository;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.jdbc.Sql;
+import qna.domain.ContentType;
+import qna.domain.DeleteHistory;
+import qna.domain.Question;
+import qna.domain.QuestionTest;
 
 import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
@@ -23,6 +26,16 @@ class DeleteHistoryRepositoryTest {
 
     @Autowired
     private EntityManager em;
+
+    private static DeleteHistory newInstance() {
+        Question question = QuestionTest.newInstance();
+        return DeleteHistory.builder()
+                .contentId(question.getId())
+                .contentType(ContentType.QUESTION)
+                .deletedBy(question.getWriter())
+                .createDate(LocalDateTime.now())
+                .build();
+    }
 
     @Test
     @DisplayName("삭제이력를 등록력한다.")
@@ -97,15 +110,5 @@ class DeleteHistoryRepositoryTest {
         assertAll(
                 () -> assertThat(findDeleteHistory.getDeletedBy().getId()).isNotNull()
         );
-    }
-
-    private static DeleteHistory newInstance() {
-        Question question = QuestionTest.newInstance();
-        return DeleteHistory.builder()
-                .contentId(question.getId())
-                .contentType(ContentType.QUESTION)
-                .deletedBy(question.getWriter())
-                .createDate(LocalDateTime.now())
-                .build();
     }
 }
